@@ -1,10 +1,10 @@
-import express from 'express';
-import { login, logout } from '../Controller/auth.controller.js';
-import { authorize } from '../middleware/roles.middleware.js';
+import express from "express";
+import { login, logout } from "../Controller/auth.controller.js";
+import { authorize } from "../middleware/roles.middleware.js";
 
 const routerAuth = express.Router();
 
-routerAuth.post('/login', login);
-routerAuth.post('/logout', authorize('admin', 'teacher', 'student'), logout);
+routerAuth.post("/login", login);
+routerAuth.post("/logout", logout);
 
 export default routerAuth;
