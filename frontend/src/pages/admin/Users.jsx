@@ -7,6 +7,7 @@ export default function AdminUsersPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [users, setUsers] = useState([])
+  const [roleFilter, setRoleFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -14,7 +15,8 @@ export default function AdminUsersPage() {
     setError('')
     setIsLoading(true)
     try {
-      const res = await http.get('/api/admin/users')
+      const qs = roleFilter !== 'all' ? `?role=${encodeURIComponent(roleFilter)}` : ''
+      const res = await http.get(`/api/admin/users${qs}`)
       const data = unwrapApiResponse(res)
       const list = Array.isArray(data) ? data : []
       setUsers(list.filter((u) => u?.role !== 'admin'))
@@ -27,7 +29,35 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     load()
-  }, [location.key, location.state?.refresh])
+  }, [location.key, location.state?.refresh, roleFilter])
+
+  const columns =
+    roleFilter === 'teacher'
+      ? [
+          { key: 'name', label: 'Name' },
+          { key: 'email', label: 'Email' },
+          { key: 'department', label: 'Department' },
+          { key: 'subject', label: 'Subject' },
+          { key: 'actions', label: '' },
+        ]
+      : roleFilter === 'student'
+        ? [
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'department', label: 'Department' },
+            { key: 'section', label: 'Section' },
+            { key: 'actions', label: '' },
+          ]
+        : [
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'role', label: 'Role' },
+            { key: 'department', label: 'Department' },
+            { key: 'info', label: 'Info' },
+            { key: 'actions', label: '' },
+          ]
+
+  const colSpan = columns.length
 
   return (
     <div>
@@ -36,12 +66,27 @@ export default function AdminUsersPage() {
           <div className="text-lg font-semibold text-zinc-900">Users</div>
           <div className="mt-1 text-sm text-zinc-600">Create, update, and delete users.</div>
         </div>
-        <Link
-          to="/admin/users/new"
-          className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:cursor-pointer hover:bg-zinc-800"
-        >
-          Create user
-        </Link>
+        <div className="flex items-center gap-3">
+          <label className="block">
+            <div className="sr-only">Role filter</div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500"
+            >
+              <option value="all">All users</option>
+              <option value="teacher">Teachers</option>
+              <option value="student">Students</option>
+            </select>
+          </label>
+
+          <Link
+            to="/admin/users/new"
+            className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:cursor-pointer hover:bg-zinc-800"
+          >
+            Create user
+          </Link>
+        </div>
       </div>
 
       {error ? (
@@ -54,37 +99,59 @@ export default function AdminUsersPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="bg-zinc-50 text-xs font-medium text-zinc-600">
             <tr>
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Department</th>
-              <th className="px-3 py-2">Subject</th>
-              <th className="px-3 py-2">Section</th>
-              <th className="px-3 py-2"></th>
+              {columns.map((c) => (
+                <th key={c.key} className="px-3 py-2">
+                  {c.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 bg-white">
             {isLoading ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-600" colSpan={7}>
+                <td className="px-3 py-3 text-zinc-600" colSpan={colSpan}>
                   Loading…
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-600" colSpan={7}>
+                <td className="px-3 py-3 text-zinc-600" colSpan={colSpan}>
                   No users found.
                 </td>
               </tr>
             ) : (
               users.map((u) => (
                 <tr key={u._id} className="transition-colors hover:bg-zinc-50">
-                  <td className="px-3 py-2 font-medium text-zinc-900">{u.name}</td>
-                  <td className="px-3 py-2 text-zinc-700">{u.email}</td>
-                  <td className="px-3 py-2 text-zinc-700">{u.role}</td>
-                  <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.department || '—'}</td>
-                  <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.class || '—'}</td>
-                  <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.section || '—'}</td>
+                  {roleFilter === 'teacher' ? (
+                    <>
+                      <td className="px-3 py-2 font-medium text-zinc-900">{u.name}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u.email}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.department || '—'}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.class || '—'}</td>
+                    </>
+                  ) : roleFilter === 'student' ? (
+                    <>
+                      <td className="px-3 py-2 font-medium text-zinc-900">{u.name}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u.email}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.department || '—'}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.section || '—'}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-3 py-2 font-medium text-zinc-900">{u.name}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u.email}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u.role}</td>
+                      <td className="px-3 py-2 text-zinc-700">{u?.roleInfo?.department || '—'}</td>
+                      <td className="px-3 py-2 text-zinc-700">
+                        {u.role === 'teacher'
+                          ? `Subject: ${u?.roleInfo?.class || '—'}`
+                          : u.role === 'student'
+                            ? `Section: ${u?.roleInfo?.section || '—'}`
+                            : '—'}
+                      </td>
+                    </>
+                  )}
+
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-2">
                       <button

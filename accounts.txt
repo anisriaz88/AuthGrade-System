@@ -1,0 +1,31 @@
+Accounts
+
+{
+  Name: Super Admin
+  Email: admin@gmail.com
+ Password : admin1234
+}
+
+{
+   Name: MJ teacher
+  Email: mj@authgrade.com
+ Password: mj1234
+}
+
+{
+ Name: Muhammad Jalal
+ Email: jal12@authgrade.com
+Password: jal123
+}
+
+{
+  Name: Anas Riaz
+  Email: anas@authgrade.com
+  Password: anas123
+}
+{
+  Name: Fazle Samad
+  Email: shah@authgrade.com
+  Password: shah123
+}
+  
