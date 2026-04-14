@@ -14,8 +14,8 @@ Accounts
 
 {
  Name: Muhammad Jalal
- Email: jal12@authgrade.com
-Password: jal123
+ Email: jalal@authgrade.com
+Password: jal1234
 }
 
 {
@@ -27,5 +27,10 @@ Password: jal123
   Name: Fazle Samad
   Email: shah@authgrade.com
   Password: shah123
+}
+{
+  Name: Shaheer
+  Email: shaheer@authgrade.com
+  Password: shaheer1234
 }
   
