@@ -17,24 +17,25 @@ const app = express();
 // Note: `origin` should match your frontend URL
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow non-browser clients (no Origin header)
-      if (!origin) return callback(null, true);
+    origin: process.env.CORS_ORIGINS,
+    // (origin, callback) => {
+    //   // Allow non-browser clients (no Origin header)
+    //   if (!origin) return callback(null, true);
 
-      // Allow configuring explicit origins via env: CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      const explicit = (process.env.CORS_ORIGINS || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    //   // Allow configuring explicit origins via env: CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    //   const explicit = (process.env.CORS_ORIGINS || "")
+    //     .split(",")
+    //     .map((s) => s.trim())
+    //     .filter(Boolean);
 
-      if (explicit.length > 0) {
-        return callback(null, explicit.includes(origin));
-      }
+    //   if (explicit.length > 0) {
+    //     return callback(null, explicit.includes(origin));
+    //   }
 
-      // Default dev allowlist: Vite often uses 5173, but may switch to 5174+.
-      const isLocalVite = /^http:\/\/(localhost|127\.0\.0\.1):517\d$/.test(origin);
-      return callback(null, isLocalVite);
-    },
+    //   // Default dev allowlist: Vite often uses 5173, but may switch to 5174+.
+    //   const isLocalVite = /^http:\/\/(localhost|127\.0\.0\.1):517\d$/.test(origin);
+    //   return callback(null, isLocalVite);
+    // },
     credentials: true,
   }),
 );

@@ -104,7 +104,7 @@ export default function TeacherStudentsPage() {
           <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm">
             <div className="text-xs text-zinc-600">Selected student</div>
             <div className="font-medium text-zinc-900">
-              {selectedStudent ? `${selectedStudent.name} (${selectedStudent.email})` : '—'}
+              {selectedStudent ? `${selectedStudent.name}` : '—'}
             </div>
           </div>
           <label className="block">

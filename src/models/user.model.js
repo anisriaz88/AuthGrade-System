@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "teacher", "student"],
       required: true,
     },
+    subject:{
+      type:String,
+    },
+    section:{
+      type:String,
+    },
     roleInfo: {
       type: Object,
       default: {},

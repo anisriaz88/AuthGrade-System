@@ -7,7 +7,9 @@ import User from "../models/user.model.js";
 
 // Create a new user (admin only)
 export const createUser = asyncHandler(async (req, res) => {
-    const { name, email, password, role, roleInfo } = req.body;
+    const { name, email, password, role, roleInfo, } = req.body;
+    console.log(req.body)
+
     if (!name || !email || !password || !role) {
         throw new ApiError(400, 'All fields are required');
     }
@@ -17,6 +19,14 @@ export const createUser = asyncHandler(async (req, res) => {
          throw new ApiError(400, 'Invalid role');
     }
 
+    if(role === 'teacher' && !roleInfo?.class) {
+        throw new ApiError(400, 'Subject is required for teacher role');
+    }
+
+    if(role == 'student' && !roleInfo?.section) {
+        throw new ApiError(400, 'Section is required for student role');
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
         throw new ApiError(409, 'Already a user is registered with this email');
@@ -24,7 +34,7 @@ export const createUser = asyncHandler(async (req, res) => {
 
     const user = await User.create(
         { 
-            name, email, password, role, roleInfo: roleInfo  || {}
+            name, email, password, role, roleInfo: roleInfo || {}, subject: roleInfo?.class || null,
         }
      );
 

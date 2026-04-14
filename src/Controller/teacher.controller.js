@@ -41,6 +41,12 @@ export const addOrUpdateGrade = asyncHandler(async (req, res) => {
   const { course, subject, grade } = req.body;
   const subjectName = subject || course;
 
+  const teacherSubject = req.user.subject;
+
+  if(subjectName !== teacherSubject) {
+    throw new ApiError(403, "You can only add grades for your subject");
+  }
+
   if (!subjectName || !grade) {
     throw new ApiError(400, "Subject and grade are required");
   }
