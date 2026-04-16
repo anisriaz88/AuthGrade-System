@@ -14,12 +14,27 @@ await connectDB();
 const app = express();
 
 // Enable CORS so a browser-based frontend can call this API.
-// Note: `origin` should match your frontend URL
+// Note: provide a comma-separated allowlist via CORS_ORIGINS in Vercel.
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin:[ process.env.CORS_ORIGIN || "http://localhost:5173",
-    "http://10.0.0.1:5173"], // Adjust this to match your frontend URL(s)
-    credentials: true
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.length > 0) {
+        return callback(null, allowedOrigins.includes(origin));
+      }
+
+      const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1|10\.0\.0\.1):\d+$/.test(origin);
+      const isVercelPreview = /^https:\/\/.*\.vercel\.app$/.test(origin);
+
+      return callback(null, isLocalDev || isVercelPreview);
+    },
+    credentials: true,
   }),
 );
 
