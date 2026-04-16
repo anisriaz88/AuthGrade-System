@@ -3,6 +3,21 @@ import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
+const isSecureRequest = (req) => {
+  return req.secure || req.headers["x-forwarded-proto"] === "https" || process.env.VERCEL === "1";
+};
+
+const getAuthCookieOptions = (req) => {
+  const secure = isSecureRequest(req);
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? "none" : "lax",
+    path: "/",
+  };
+};
+
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -20,10 +35,11 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const accessToken = await user.generateAccessToken(user._id);
-  console.log(accessToken)
 
   const loggedInUser = await User.findById(user._id).select("-password");
   delete loggedInUser.password;
+
+  res.cookie("accessToken", accessToken, getAuthCookieOptions(req));
 
   res.status(200).json(
     new ApiResponse(200, "Login successful", {
@@ -34,5 +50,6 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const logout = asyncHandler(async (req, res) => {
+  res.clearCookie("accessToken", getAuthCookieOptions(req));
   res.status(200).json(new ApiResponse(200, "Logout successful", null));
 });
