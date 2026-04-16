@@ -13,31 +13,13 @@ await connectDB();
 
 const app = express();
 
-// Needed for secure cookies and protocol detection behind Vercel's proxy.
-app.set("trust proxy", 1);
-
 // Enable CORS so a browser-based frontend can call this API.
-// Note: explicit allowlists can be provided through CORS_ORIGINS.
-const allowedOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
+// Note: `origin` should match your frontend URL
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.length > 0) {
-        return callback(null, allowedOrigins.includes(origin));
-      }
-
-      const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-      const isVercelPreview = /^https:\/\/.*\.vercel\.app$/.test(origin);
-
-      return callback(null, isLocalDev || isVercelPreview);
-    },
-    credentials: true,
+    origin:[ process.env.CORS_ORIGIN || "http://localhost:5173",
+    "http://10.0.0.1:5173"], // Adjust this to match your frontend URL(s)
+    credentials: true
   }),
 );
 
