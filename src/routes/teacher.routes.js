@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllStudents, addOrUpdateGrade, getResults } from '../Controller/teacher.controller.js';
+import { getAllStudents, addOrUpdateGrade, getResults } from '../controller/teacher.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/roles.middleware.js';
 

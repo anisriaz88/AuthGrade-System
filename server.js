@@ -9,7 +9,7 @@ import errorHandler from "./src/middleware/errorHandler.middlware.js";
 dotenv.config();
 
 // Connect to MongoDB at startup (fails fast if it cannot connect).
-connectDB();
+await connectDB();
 
 const app = express();
 
@@ -18,24 +18,7 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CORS_ORIGINS,
-    // (origin, callback) => {
-    //   // Allow non-browser clients (no Origin header)
-    //   if (!origin) return callback(null, true);
-
-    //   // Allow configuring explicit origins via env: CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-    //   const explicit = (process.env.CORS_ORIGINS || "")
-    //     .split(",")
-    //     .map((s) => s.trim())
-    //     .filter(Boolean);
-
-    //   if (explicit.length > 0) {
-    //     return callback(null, explicit.includes(origin));
-    //   }
-
-    //   // Default dev allowlist: Vite often uses 5173, but may switch to 5174+.
-    //   const isLocalVite = /^http:\/\/(localhost|127\.0\.0\.1):517\d$/.test(origin);
-    //   return callback(null, isLocalVite);
-    // },
+    
     credentials: true,
   }),
 );
@@ -64,7 +47,11 @@ app.use((req, res) => {
 // Get the port from environment variables or default to 5000
 const PORT = process.env.PORT || 5000;
 
-// Start the HTTP server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start the HTTP server only when running locally.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;
