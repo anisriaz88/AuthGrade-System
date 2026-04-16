@@ -8,7 +8,6 @@ import User from "../models/user.model.js";
 // Create a new user (admin only)
 export const createUser = asyncHandler(async (req, res) => {
     const { name, email, password, role, roleInfo, } = req.body;
-    console.log(req.body)
 
     if (!name || !email || !password || !role) {
         throw new ApiError(400, 'All fields are required');

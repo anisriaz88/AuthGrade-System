@@ -40,7 +40,6 @@ const connectDB = async () => {
 
     try {
         forMongoose.__mongoose.conn = await forMongoose.__mongoose.promise;
-        console.log('MongoDB connected');
         return forMongoose.__mongoose.conn;
     } catch (error) {
         forMongoose.__mongoose.promise = null;
@@ -51,7 +50,6 @@ const connectDB = async () => {
             dns.setServers(['8.8.8.8', '1.1.1.1']);
             forMongoose.__mongoose.promise = mongoose.connect(mongoUri).then((connection) => connection.connection);
             forMongoose.__mongoose.conn = await forMongoose.__mongoose.promise;
-            console.log('MongoDB connected');
             return forMongoose.__mongoose.conn;
         }
 
