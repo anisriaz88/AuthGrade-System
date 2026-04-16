@@ -1,2 +1,6 @@
-# ENV File
+# ENV files
 .env
+.env.*
+!frontend/.env.example
+!.env.example
+frontend/.env
