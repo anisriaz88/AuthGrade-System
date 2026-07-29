@@ -165,15 +165,6 @@ export default function StudentGradesPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            disabled={isLoading || grades.length === 0}
-            onClick={handleDownloadPDF}
-            title="Download PDF Transcript"
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Download PDF</span>
-          </button>
 
           <button
             onClick={load}
@@ -207,7 +198,15 @@ export default function StudentGradesPage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
-            <span>PDF Export</span>
+              <button
+            disabled={isLoading || grades.length === 0}
+            onClick={handleDownloadPDF}
+            title="Download PDF Transcript"
+            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Download PDF</span>
+          </button>
             <FileText className="h-4 w-4 text-purple-600" />
           </div>
         </div>
