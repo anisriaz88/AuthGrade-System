@@ -198,6 +198,7 @@ export default function StudentGradesPage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
+            <span>Export Official Transcript</span>
               <button
             disabled={isLoading || grades.length === 0}
             onClick={handleDownloadPDF}
