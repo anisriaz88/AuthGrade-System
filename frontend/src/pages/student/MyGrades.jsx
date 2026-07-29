@@ -205,7 +205,7 @@ export default function StudentGradesPage() {
             disabled={isLoading || grades.length === 0}
             onClick={handleDownloadPDF}
             title="Download PDF Transcript"
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center mt-5 gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Download PDF</span>
@@ -285,9 +285,6 @@ export default function StudentGradesPage() {
                       {/* Teacher */}
                       <td className="px-4 py-3 font-medium">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                            {teacherInitial}
-                          </div>
                           <span className="text-slate-800 dark:text-slate-200">{g?.teacher?.name || '—'}</span>
                         </div>
                       </td>
