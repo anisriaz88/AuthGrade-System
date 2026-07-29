@@ -199,6 +199,8 @@ export default function StudentGradesPage() {
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <span>Export Official Transcript</span>
+            <FileText className="h-4 w-4 text-purple-600" />
+            </div>
               <button
             disabled={isLoading || grades.length === 0}
             onClick={handleDownloadPDF}
@@ -208,8 +210,6 @@ export default function StudentGradesPage() {
             <Download className="h-3.5 w-3.5" />
             <span>Download PDF</span>
           </button>
-            <FileText className="h-4 w-4 text-purple-600" />
-          </div>
         </div>
       </div>
 
