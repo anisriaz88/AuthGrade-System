@@ -210,18 +210,6 @@ export default function StudentGradesPage() {
             <span>PDF Export</span>
             <FileText className="h-4 w-4 text-purple-600" />
           </div>
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              Official Transcript
-            </span>
-            <button
-              disabled={isLoading || grades.length === 0}
-              onClick={handleDownloadPDF}
-              className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline hover:cursor-pointer disabled:opacity-50 disabled:no-underline"
-            >
-              Export PDF
-            </button>
-          </div>
         </div>
       </div>
 
@@ -238,10 +226,10 @@ export default function StudentGradesPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 dark:bg-slate-950/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="px-4 py-3">Subject / Course</th>
+                <th className="px-4 py-3">Subject</th>
                 <th className="px-4 py-3">Grade</th>
-                <th className="px-4 py-3">Score / Marks</th>
-                <th className="px-4 py-3">Evaluating Faculty</th>
+                <th className="px-4 py-3">Marks</th>
+                <th className="px-4 py-3">Lecturer</th>
                 <th className="px-4 py-3 text-right">Date Posted</th>
               </tr>
             </thead>
