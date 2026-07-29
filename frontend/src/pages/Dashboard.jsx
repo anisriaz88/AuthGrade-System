@@ -166,9 +166,6 @@ export default function DashboardPage() {
             </div>
             <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Your Profile Overview</span>
           </div>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-            ID: {user?._id?.slice(-8) || 'ACTIVE'}
-          </span>
         </div>
 
         <div className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 ${user?.role === 'admin' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
