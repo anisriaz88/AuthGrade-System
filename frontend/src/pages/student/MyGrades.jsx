@@ -17,7 +17,7 @@ import autoTable from 'jspdf-autotable'
 import http from '../../api/http.js'
 import { useAuth } from '../../auth/useAuth.js'
 import { getErrorMessage, unwrapApiResponse } from '../../api/apiUtils.js'
-import { parseGradeAndScore, getGradeBadgeStyle } from '../../utils/gradeUtils.js'
+import { parseGradeAndScore, getGradeBadgeStyle, calculateGradeFromMarks } from '../../utils/gradeUtils.js'
 
 export default function StudentGradesPage() {
   const { user } = useAuth()
@@ -43,7 +43,7 @@ export default function StudentGradesPage() {
     load()
   }, [])
 
-  // Calculate Total Marks & Percentage
+  // Calculate Total Marks, Percentage & Overall Grade
   let totalScore = 0
   let numericCount = 0
   grades.forEach((g) => {
@@ -55,7 +55,9 @@ export default function StudentGradesPage() {
     }
   })
   const maxPossibleMarks = numericCount * 100
-  const percentage = numericCount > 0 ? `${((totalScore / maxPossibleMarks) * 100).toFixed(1)}%` : '—'
+  const percentageNum = numericCount > 0 ? (totalScore / maxPossibleMarks) * 100 : 0
+  const percentage = numericCount > 0 ? `${percentageNum.toFixed(1)}%` : '—'
+  const overallGrade = numericCount > 0 ? calculateGradeFromMarks(percentageNum) : '—'
 
   const handleDownloadPDF = () => {
     if (!grades || grades.length === 0) return
@@ -82,13 +84,15 @@ export default function StudentGradesPage() {
     })
 
     const pdfMaxMarks = pdfCount * 100
-    const pdfPercentage = pdfCount > 0 ? `${((pdfTotalMarks / pdfMaxMarks) * 100).toFixed(1)}%` : '—'
+    const pdfPercentageNum = pdfCount > 0 ? (pdfTotalMarks / pdfMaxMarks) * 100 : 0
+    const pdfPercentage = pdfCount > 0 ? `${pdfPercentageNum.toFixed(1)}%` : '—'
+    const pdfOverallGrade = pdfCount > 0 ? calculateGradeFromMarks(pdfPercentageNum) : '—'
 
-    // Append summary total row
+    // Append summary total row with Overall Grade
     tableRows.push([
       '',
-      'TOTAL MARKS',
-      'OVERALL',
+      'TOTAL MARKS & OVERALL GRADE',
+      pdfOverallGrade,
       `${pdfTotalMarks} / ${pdfMaxMarks} (${pdfPercentage})`,
       '—',
       '—',
@@ -131,10 +135,15 @@ export default function StudentGradesPage() {
       doc.text(metaParts.join(' | '), 14, 58)
     }
 
-    const issuedDate = new Date().toLocaleString()
-    doc.text(`Date Issued: ${issuedDate}`, 120, 40)
-    doc.text('Status: VERIFIED & OFFICIAL', 120, 46)
-    doc.text(`Total Marks: ${pdfTotalMarks}/${pdfMaxMarks} (${pdfPercentage})`, 120, 52)
+    const issuedDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    doc.text(`Date Issued: ${issuedDate}`, 115, 40)
+    doc.text('Status: VERIFIED & OFFICIAL', 115, 46)
+    doc.text(`Total Marks: ${pdfTotalMarks}/${pdfMaxMarks} (${pdfPercentage})`, 115, 52)
+    doc.text(`Overall Grade: ${pdfOverallGrade}`, 115, 58)
 
     // Divider
     doc.setDrawColor(226, 232, 240)
@@ -356,8 +365,12 @@ export default function StudentGradesPage() {
                   })}
                   {/* Total Marks Row at bottom of UI table */}
                   <tr className="bg-slate-100/80 dark:bg-slate-950/80 font-bold border-t-2 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
-                    <td className="px-4 py-3">Total Marks & Percentage</td>
-                    <td className="px-4 py-3 text-xs text-blue-600 dark:text-blue-400">OVERALL</td>
+                    <td className="px-4 py-3">Total Marks & Overall Grade</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-extrabold border ${getGradeBadgeStyle(overallGrade)}`}>
+                        {overallGrade}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 font-mono text-sm text-blue-600 dark:text-blue-400">{totalScore} / {maxPossibleMarks} <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 ml-1">({percentage})</span></td>
                     <td className="px-4 py-3 text-slate-400">—</td>
                     <td className="px-4 py-3 text-right text-slate-400">—</td>
