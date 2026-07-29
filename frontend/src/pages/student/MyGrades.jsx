@@ -43,7 +43,7 @@ export default function StudentGradesPage() {
     load()
   }, [])
 
-  // Calculate Total Marks & Average
+  // Calculate Total Marks & Percentage
   let totalScore = 0
   let numericCount = 0
   grades.forEach((g) => {
@@ -54,7 +54,8 @@ export default function StudentGradesPage() {
       numericCount += 1
     }
   })
-  const avgScore = numericCount > 0 ? (totalScore / numericCount).toFixed(1) : '—'
+  const maxPossibleMarks = numericCount * 100
+  const percentage = numericCount > 0 ? `${((totalScore / maxPossibleMarks) * 100).toFixed(1)}%` : '—'
 
   const handleDownloadPDF = () => {
     if (!grades || grades.length === 0) return
@@ -80,14 +81,15 @@ export default function StudentGradesPage() {
       ]
     })
 
-    const pdfAvgScore = pdfCount > 0 ? (pdfTotalMarks / pdfCount).toFixed(1) : '—'
+    const pdfMaxMarks = pdfCount * 100
+    const pdfPercentage = pdfCount > 0 ? `${((pdfTotalMarks / pdfMaxMarks) * 100).toFixed(1)}%` : '—'
 
     // Append summary total row
     tableRows.push([
       '',
-      'TOTAL ACCUMULATED MARKS',
-      '—',
-      `${pdfTotalMarks} (Avg: ${pdfAvgScore})`,
+      'TOTAL MARKS',
+      'OVERALL',
+      `${pdfTotalMarks} / ${pdfMaxMarks} (${pdfPercentage})`,
       '—',
       '—',
     ])
@@ -130,9 +132,9 @@ export default function StudentGradesPage() {
     }
 
     const issuedDate = new Date().toLocaleString()
-    doc.text(`Date Issued: ${issuedDate}`, 125, 40)
-    doc.text('Status: VERIFIED & OFFICIAL', 125, 46)
-    doc.text(`Total Marks: ${pdfTotalMarks} (Avg: ${pdfAvgScore})`, 125, 52)
+    doc.text(`Date Issued: ${issuedDate}`, 120, 40)
+    doc.text('Status: VERIFIED & OFFICIAL', 120, 46)
+    doc.text(`Total Marks: ${pdfTotalMarks}/${pdfMaxMarks} (${pdfPercentage})`, 120, 52)
 
     // Divider
     doc.setDrawColor(226, 232, 240)
@@ -230,12 +232,12 @@ export default function StudentGradesPage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
-            <span>Total Accum. Marks</span>
+            <span>Total Score & Percentage</span>
             <Calculator className="h-4 w-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">{totalScore}</span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">(Avg: {avgScore})</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">{totalScore} <span className="text-xs text-slate-400 font-medium">/ {maxPossibleMarks}</span></span>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">({percentage})</span>
           </div>
         </div>
 
@@ -354,9 +356,9 @@ export default function StudentGradesPage() {
                   })}
                   {/* Total Marks Row at bottom of UI table */}
                   <tr className="bg-slate-100/80 dark:bg-slate-950/80 font-bold border-t-2 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
-                    <td className="px-4 py-3">Total Accumulated Marks</td>
+                    <td className="px-4 py-3">Total Marks & Percentage</td>
                     <td className="px-4 py-3 text-xs text-blue-600 dark:text-blue-400">OVERALL</td>
-                    <td className="px-4 py-3 font-mono text-sm text-blue-600 dark:text-blue-400">{totalScore} <span className="text-xs font-normal text-slate-500">(Avg: {avgScore})</span></td>
+                    <td className="px-4 py-3 font-mono text-sm text-blue-600 dark:text-blue-400">{totalScore} / {maxPossibleMarks} <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 ml-1">({percentage})</span></td>
                     <td className="px-4 py-3 text-slate-400">—</td>
                     <td className="px-4 py-3 text-right text-slate-400">—</td>
                   </tr>
