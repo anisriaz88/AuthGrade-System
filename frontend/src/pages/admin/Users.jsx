@@ -320,7 +320,6 @@ export default function AdminUsersPage() {
                             className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:cursor-pointer"
                           >
                             <Edit3 className="h-3.5 w-3.5 text-slate-500" />
-                            <span>Edit</span>
                           </button>
                           <button
                             onClick={async () => {
@@ -337,7 +336,6 @@ export default function AdminUsersPage() {
                             className="flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-900/60 hover:cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete</span>
                           </button>
                         </div>
                       </td>
