@@ -18,8 +18,11 @@ export const createUser = asyncHandler(async (req, res) => {
          throw new ApiError(400, 'Invalid role');
     }
 
-    if(role === 'teacher' && !roleInfo?.class) {
-        throw new ApiError(400, 'Subject is required for teacher role');
+    if(role === 'teacher') {
+        const hasAssignments = Array.isArray(roleInfo?.assignments) && roleInfo.assignments.length > 0;
+        if (!roleInfo?.faculty || (!roleInfo?.class && !hasAssignments)) {
+            throw new ApiError(400, 'Faculty name and at least one subject/department assignment are required for teacher role');
+        }
     }
 
     if(role == 'student' && !roleInfo?.section) {
@@ -72,12 +75,15 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 // update User (admin only)
 export const updateUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const  updates = req.body;
+    const updates = req.body;
 
    if(updates.role || updates.password){
         throw new ApiError(400, 'You cannot update role or password through this endpoint');
    }
     
+   if (updates.roleInfo && updates.roleInfo.class) {
+       updates.subject = updates.roleInfo.class;
+   }
 
     const user = await User.findByIdAndUpdate(
         id,

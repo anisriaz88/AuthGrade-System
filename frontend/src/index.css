@@ -1,12 +1,104 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+html.dark {
+  /* Corporate Dark Mode Colors */
+  --bg-main: #090d16;
+  --bg-surface: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #0f172a;
+  --border-color: #334155;
+  --border-subtle: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --brand-primary: #2563eb;
+  --brand-hover: #1d4ed8;
+  color-scheme: dark;
+}
+
+html.light {
+  /* Enterprise Light Mode Colors */
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --border-color: #e5e7eb;
+  --border-subtle: #f1f5f9;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --text-subtle: #9ca3af;
+  --brand-primary: #2563eb;
+  --brand-hover: #1e40af;
+  color-scheme: light;
+}
+
+:root {
+  --bg-main: #f8fafc;
+  --text-main: #111827;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
 @layer base {
   html,
   body {
     height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
   body {
-    @apply bg-zinc-50 text-zinc-900;
+    background-color: var(--bg-main);
+    color: var(--text-main);
   }
+}
+
+/* Enterprise SaaS Utility Helpers */
+.org-surface {
+  background-color: var(--bg-surface);
+  border-color: var(--border-color);
+}
+
+.org-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+.org-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.org-input:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
