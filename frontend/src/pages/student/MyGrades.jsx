@@ -105,7 +105,7 @@ export default function StudentGradesPage() {
 
     autoTable(doc, {
       startY: 68,
-      head: [['#', 'Subject / Course', 'Grade', 'Score / Marks', 'Faculty Evaluator', 'Date Posted']],
+      head: [['No.', 'Subject', 'Grade', 'Score', 'Lecturer', 'Date Posted']],
       body: tableRows,
       headStyles: {
         fillColor: [30, 58, 138],
