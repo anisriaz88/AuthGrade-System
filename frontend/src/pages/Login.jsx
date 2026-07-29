@@ -26,7 +26,11 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const [theme, setTheme] = useState(() => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'))
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved) return saved
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  })
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Download,
   FileText,
+  Calculator,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -42,8 +43,54 @@ export default function StudentGradesPage() {
     load()
   }, [])
 
+  // Calculate Total Marks & Average
+  let totalScore = 0
+  let numericCount = 0
+  grades.forEach((g) => {
+    const { score } = parseGradeAndScore(g?.grade)
+    const num = parseFloat(score)
+    if (!isNaN(num)) {
+      totalScore += num
+      numericCount += 1
+    }
+  })
+  const avgScore = numericCount > 0 ? (totalScore / numericCount).toFixed(1) : '—'
+
   const handleDownloadPDF = () => {
     if (!grades || grades.length === 0) return
+
+    let pdfTotalMarks = 0
+    let pdfCount = 0
+
+    const tableRows = grades.map((g, idx) => {
+      const { grade: gradeTier, score: scoreVal } = parseGradeAndScore(g?.grade)
+      const parsed = parseFloat(scoreVal)
+      if (!isNaN(parsed)) {
+        pdfTotalMarks += parsed
+        pdfCount += 1
+      }
+      const dateStr = g?.updatedAt ? new Date(g.updatedAt).toLocaleDateString() : '—'
+      return [
+        idx + 1,
+        g?.subject || '—',
+        gradeTier || '—',
+        scoreVal || '—',
+        g?.teacher?.name || '—',
+        dateStr,
+      ]
+    })
+
+    const pdfAvgScore = pdfCount > 0 ? (pdfTotalMarks / pdfCount).toFixed(1) : '—'
+
+    // Append summary total row
+    tableRows.push([
+      '',
+      'TOTAL ACCUMULATED MARKS',
+      '—',
+      `${pdfTotalMarks} (Avg: ${pdfAvgScore})`,
+      '—',
+      '—',
+    ])
 
     const doc = new jsPDF()
 
@@ -73,35 +120,24 @@ export default function StudentGradesPage() {
     if (user?.roleInfo?.department) {
       doc.text(`Department: ${user.roleInfo.department}`, 14, 52)
     }
-    if (user?.roleInfo?.section || user?.roleInfo?.batch) {
-      const secStr = user?.roleInfo?.section ? `Section: ${user.roleInfo.section}` : ''
-      const batchStr = user?.roleInfo?.batch ? `Batch: ${user.roleInfo.batch}` : ''
-      doc.text(`${secStr}${secStr && batchStr ? ' | ' : ''}${batchStr}`, 14, 58)
+
+    const metaParts = []
+    if (user?.roleInfo?.section) metaParts.push(`Section: ${user.roleInfo.section}`)
+    if (user?.roleInfo?.semester) metaParts.push(`Semester: ${user.roleInfo.semester}`)
+    if (user?.roleInfo?.batch) metaParts.push(`Batch: ${user.roleInfo.batch}`)
+    if (metaParts.length > 0) {
+      doc.text(metaParts.join(' | '), 14, 58)
     }
 
     const issuedDate = new Date().toLocaleString()
-    doc.text(`Date Issued: ${issuedDate}`, 130, 40)
-    doc.text('Status: VERIFIED & OFFICIAL', 130, 46)
-    doc.text('Access Level: ENROLLED STUDENT', 130, 52)
+    doc.text(`Date Issued: ${issuedDate}`, 125, 40)
+    doc.text('Status: VERIFIED & OFFICIAL', 125, 46)
+    doc.text(`Total Marks: ${pdfTotalMarks} (Avg: ${pdfAvgScore})`, 125, 52)
 
     // Divider
     doc.setDrawColor(226, 232, 240)
     doc.setLineWidth(0.5)
     doc.line(14, 63, 196, 63)
-
-    // Format Table Content
-    const tableRows = grades.map((g, idx) => {
-      const { grade: gradeTier, score: scoreVal } = parseGradeAndScore(g?.grade)
-      const dateStr = g?.updatedAt ? new Date(g.updatedAt).toLocaleDateString() : '—'
-      return [
-        idx + 1,
-        g?.subject || '—',
-        gradeTier || '—',
-        scoreVal || '—',
-        g?.teacher?.name || '—',
-        dateStr,
-      ]
-    })
 
     autoTable(doc, {
       startY: 68,
@@ -124,9 +160,16 @@ export default function StudentGradesPage() {
         0: { cellWidth: 10 },
         1: { cellWidth: 55 },
         2: { cellWidth: 25, fontStyle: 'bold' },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 40 },
+        3: { cellWidth: 32, fontStyle: 'bold' },
+        4: { cellWidth: 38 },
         5: { cellWidth: 22 },
+      },
+      didParseCell: (data) => {
+        if (data.row.index === tableRows.length - 1) {
+          data.cell.styles.fontStyle = 'bold'
+          data.cell.styles.fillColor = [241, 245, 249]
+          data.cell.styles.textColor = [30, 58, 138]
+        }
       },
     })
 
@@ -165,7 +208,6 @@ export default function StudentGradesPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-
           <button
             onClick={load}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 hover:cursor-pointer"
@@ -177,13 +219,24 @@ export default function StudentGradesPage() {
       </div>
 
       {/* Summary KPI Banner */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <span>Evaluated Courses</span>
             <BookOpen className="h-4 w-4 text-blue-600" />
           </div>
           <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{grades.length}</div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
+            <span>Total Accum. Marks</span>
+            <Calculator className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">{totalScore}</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">(Avg: {avgScore})</span>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
@@ -198,14 +251,14 @@ export default function StudentGradesPage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold">
-            <span>Export Official Transcript</span>
+            <span>Export Transcript</span>
             <FileText className="h-4 w-4 text-purple-600" />
-            </div>
-              <button
+          </div>
+          <button
             disabled={isLoading || grades.length === 0}
             onClick={handleDownloadPDF}
             title="Download PDF Transcript"
-            className="flex items-center mt-5 gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center mt-2 gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Download PDF</span>
@@ -254,51 +307,60 @@ export default function StudentGradesPage() {
                   </td>
                 </tr>
               ) : (
-                grades.map((g) => {
-                  const teacherInitial = g?.teacher?.name ? g.teacher.name.charAt(0).toUpperCase() : 'T'
-                  const { grade: gradeTier, score: scoreVal } = parseGradeAndScore(g?.grade)
+                <>
+                  {grades.map((g) => {
+                    const { grade: gradeTier, score: scoreVal } = parseGradeAndScore(g?.grade)
 
-                  return (
-                    <tr key={g._id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
-                      {/* Subject */}
-                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700">
-                          <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-                          {g?.subject}
-                        </span>
-                      </td>
+                    return (
+                      <tr key={g._id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+                        {/* Subject */}
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700">
+                            <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                            {g?.subject}
+                          </span>
+                        </td>
 
-                      {/* Grade Column */}
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-extrabold border ${getGradeBadgeStyle(gradeTier)}`}>
-                          {gradeTier}
-                        </span>
-                      </td>
+                        {/* Grade Column */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-extrabold border ${getGradeBadgeStyle(gradeTier)}`}>
+                            {gradeTier}
+                          </span>
+                        </td>
 
-                      {/* Score Column */}
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                          {scoreVal}
-                        </span>
-                      </td>
+                        {/* Marks Column */}
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {scoreVal}
+                          </span>
+                        </td>
 
-                      {/* Teacher */}
-                      <td className="px-4 py-3 font-medium">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-800 dark:text-slate-200">{g?.teacher?.name || '—'}</span>
-                        </div>
-                      </td>
+                        {/* Teacher */}
+                        <td className="px-4 py-3 font-medium">
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-800 dark:text-slate-200">{g?.teacher?.name || '—'}</span>
+                          </div>
+                        </td>
 
-                      {/* Date */}
-                      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-slate-400" />
-                          {g?.updatedAt ? new Date(g.updatedAt).toLocaleString() : '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })
+                        {/* Date */}
+                        <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-slate-400" />
+                            {g?.updatedAt ? new Date(g.updatedAt).toLocaleString() : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {/* Total Marks Row at bottom of UI table */}
+                  <tr className="bg-slate-100/80 dark:bg-slate-950/80 font-bold border-t-2 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+                    <td className="px-4 py-3">Total Accumulated Marks</td>
+                    <td className="px-4 py-3 text-xs text-blue-600 dark:text-blue-400">OVERALL</td>
+                    <td className="px-4 py-3 font-mono text-sm text-blue-600 dark:text-blue-400">{totalScore} <span className="text-xs font-normal text-slate-500">(Avg: {avgScore})</span></td>
+                    <td className="px-4 py-3 text-slate-400">—</td>
+                    <td className="px-4 py-3 text-right text-slate-400">—</td>
+                  </tr>
+                </>
               )}
             </tbody>
           </table>

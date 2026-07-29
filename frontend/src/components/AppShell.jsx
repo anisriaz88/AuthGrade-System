@@ -41,11 +41,16 @@ function NavItem({ to, children, icon: Icon, end }) {
 
 export default function AppShell() {
   const { user, logout } = useAuth()
-  const [theme, setTheme] = useState(() => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'))
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved) return saved
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  })
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
+    localStorage.setItem('theme', next)
     if (next === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
