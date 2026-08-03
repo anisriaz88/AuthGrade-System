@@ -9,6 +9,7 @@ import {
   Edit3,
   AlertCircle,
   Calendar,
+  RotateCcw,
 } from 'lucide-react'
 import http from '../../api/http.js'
 import { getErrorMessage, unwrapApiResponse } from '../../api/apiUtils.js'
@@ -16,6 +17,8 @@ import { parseGradeAndScore, getGradeBadgeStyle, calculateGradeFromMarks } from 
 
 export default function TeacherResultsPage() {
   const [results, setResults] = useState([])
+  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [batchFilter, setBatchFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,6 +27,30 @@ export default function TeacherResultsPage() {
   const [editingGrade, setEditingGrade] = useState('')
   const [editingScore, setEditingScore] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+
+  // Compute available department choices from results
+  const availableDepartments = useMemo(() => {
+    const set = new Set()
+    results.forEach((r) => {
+      const dept = r?.student?.roleInfo?.department || r?.student?.department
+      if (dept && String(dept).trim()) {
+        set.add(String(dept).trim())
+      }
+    })
+    return Array.from(set).sort()
+  }, [results])
+
+  // Compute available batch choices from results
+  const availableBatches = useMemo(() => {
+    const set = new Set()
+    results.forEach((r) => {
+      const b = r?.student?.roleInfo?.batch || r?.student?.batch
+      if (b && String(b).trim()) {
+        set.add(String(b).trim())
+      }
+    })
+    return Array.from(set).sort()
+  }, [results])
 
   const canSave = useMemo(
     () => editingId && (editingGrade.trim() || editingScore.trim()),
@@ -48,19 +75,38 @@ export default function TeacherResultsPage() {
     load()
   }, [])
 
-  const filteredResults = results.filter((r) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    const { grade, score } = parseGradeAndScore(r?.grade)
-    return (
-      r?.student?.name?.toLowerCase().includes(q) ||
-      r?.student?.email?.toLowerCase().includes(q) ||
-      r?.subject?.toLowerCase().includes(q) ||
-      grade.toLowerCase().includes(q) ||
-      score.toLowerCase().includes(q) ||
-      r?.grade?.toLowerCase().includes(q)
-    )
-  })
+  const filteredResults = useMemo(() => {
+    return results.filter((r) => {
+      if (departmentFilter !== 'all') {
+        const rDept = String(r?.student?.roleInfo?.department || r?.student?.department || '').toLowerCase().trim()
+        if (rDept !== departmentFilter.toLowerCase().trim()) return false
+      }
+
+      if (batchFilter !== 'all') {
+        const rBatch = String(r?.student?.roleInfo?.batch || r?.student?.batch || '').toLowerCase().trim()
+        if (rBatch !== batchFilter.toLowerCase().trim()) return false
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const { grade, score } = parseGradeAndScore(r?.grade)
+        const matchesSearch =
+          r?.student?.name?.toLowerCase().includes(q) ||
+          r?.student?.email?.toLowerCase().includes(q) ||
+          r?.student?.roleInfo?.department?.toLowerCase().includes(q) ||
+          r?.student?.roleInfo?.batch?.toLowerCase().includes(q) ||
+          r?.subject?.toLowerCase().includes(q) ||
+          grade.toLowerCase().includes(q) ||
+          score.toLowerCase().includes(q) ||
+          r?.grade?.toLowerCase().includes(q)
+        if (!matchesSearch) return false
+      }
+
+      return true
+    })
+  }, [results, departmentFilter, batchFilter, searchQuery])
+
+  const hasActiveFilters = departmentFilter !== 'all' || batchFilter !== 'all' || searchQuery.trim() !== ''
 
   return (
     <div className="space-y-6">
@@ -78,7 +124,7 @@ export default function TeacherResultsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Search bar */}
           <div className="relative w-48 sm:w-56">
             <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
@@ -90,6 +136,54 @@ export default function TeacherResultsPage() {
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
             />
           </div>
+
+          {/* Department Filter */}
+          <div className="relative">
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Departments</option>
+              {availableDepartments.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Batch Filter */}
+          <div className="relative">
+            <select
+              value={batchFilter}
+              onChange={(e) => setBatchFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Batches</option>
+              {availableBatches.map((b) => (
+                <option key={b} value={b}>
+                  Batch {b}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reset Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setDepartmentFilter('all')
+                setBatchFilter('all')
+                setSearchQuery('')
+              }}
+              title="Reset all filters"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors hover:cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset</span>
+            </button>
+          )}
 
           {/* Refresh button */}
           <button

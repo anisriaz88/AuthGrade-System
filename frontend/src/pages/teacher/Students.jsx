@@ -31,6 +31,33 @@ export default function TeacherStudentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState('')
 
+  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [batchFilter, setBatchFilter] = useState('all')
+
+  // Compute available department choices from student roster
+  const availableDepartments = useMemo(() => {
+    const set = new Set()
+    students.forEach((s) => {
+      const dept = s?.roleInfo?.department || s?.department
+      if (dept && String(dept).trim()) {
+        set.add(String(dept).trim())
+      }
+    })
+    return Array.from(set).sort()
+  }, [students])
+
+  // Compute available batch choices from student roster
+  const availableBatches = useMemo(() => {
+    const set = new Set()
+    students.forEach((s) => {
+      const b = s?.roleInfo?.batch || s?.batch
+      if (b && String(b).trim()) {
+        set.add(String(b).trim())
+      }
+    })
+    return Array.from(set).sort()
+  }, [students])
+
   // Extract all assigned subject-department pairs from teacher's roleInfo
   const assignmentsList = useMemo(() => {
     const raw = user?.roleInfo?.assignments
@@ -109,17 +136,33 @@ export default function TeacherStudentsPage() {
     })
   }, [students, activeAssignment])
 
-  const filteredStudents = departmentStudents.filter((s) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      s?.name?.toLowerCase().includes(q) ||
-      s?.email?.toLowerCase().includes(q) ||
-      s?.roleInfo?.section?.toLowerCase().includes(q) ||
-      s?.roleInfo?.semester?.toLowerCase().includes(q) ||
-      s?.roleInfo?.batch?.toLowerCase().includes(q)
-    )
-  })
+  const filteredStudents = useMemo(() => {
+    return departmentStudents.filter((s) => {
+      if (departmentFilter !== 'all') {
+        const sDept = String(s?.roleInfo?.department || s?.department || '').toLowerCase().trim()
+        if (sDept !== departmentFilter.toLowerCase().trim()) return false
+      }
+
+      if (batchFilter !== 'all') {
+        const sBatch = String(s?.roleInfo?.batch || s?.batch || '').toLowerCase().trim()
+        if (sBatch !== batchFilter.toLowerCase().trim()) return false
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        return (
+          s?.name?.toLowerCase().includes(q) ||
+          s?.email?.toLowerCase().includes(q) ||
+          s?.roleInfo?.section?.toLowerCase().includes(q) ||
+          s?.roleInfo?.semester?.toLowerCase().includes(q) ||
+          s?.roleInfo?.batch?.toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+  }, [departmentStudents, departmentFilter, batchFilter, searchQuery])
+
+  const hasActiveFilters = departmentFilter !== 'all' || batchFilter !== 'all' || searchQuery.trim() !== ''
 
   return (
     <div className="space-y-6">
@@ -137,16 +180,51 @@ export default function TeacherStudentsPage() {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative w-56">
-          <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search student..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-          />
+        {/* Toolbar Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative w-48 sm:w-56">
+            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search student..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+            />
+          </div>
+
+          {/* Department Filter */}
+          <div className="relative">
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Departments</option>
+              {availableDepartments.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Batch Filter */}
+          <div className="relative">
+            <select
+              value={batchFilter}
+              onChange={(e) => setBatchFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Batches</option>
+              {availableBatches.map((b) => (
+                <option key={b} value={b}>
+                  Batch {b}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
