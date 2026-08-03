@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Users,
@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle2,
   School,
+  RotateCcw,
 } from 'lucide-react'
 import http from '../../api/http.js'
 import { getErrorMessage, unwrapApiResponse } from '../../api/apiUtils.js'
@@ -23,15 +24,55 @@ export default function AdminUsersPage() {
   const location = useLocation()
   const [users, setUsers] = useState([])
   const [roleFilter, setRoleFilter] = useState('all')
+  const [batchFilter, setBatchFilter] = useState('all')
+  const [sectionFilter, setSectionFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Compute available batch choices from loaded users + default standard options
+  const availableBatches = useMemo(() => {
+    const defaults = ['2021-2025', '2022-2026', '2023-2027', '2024-2028', '2025-2029']
+    const set = new Set(defaults)
+    users.forEach((u) => {
+      if (u?.roleInfo?.batch) set.add(u.roleInfo.batch)
+      if (u?.batch) set.add(u.batch)
+      if (Array.isArray(u?.roleInfo?.assignments)) {
+        u.roleInfo.assignments.forEach((a) => {
+          if (a.batch) set.add(a.batch)
+          if (a.semester) set.add(a.semester)
+        })
+      }
+    })
+    return Array.from(set).filter(Boolean).sort()
+  }, [users])
+
+  // Compute available section choices from loaded users + default standard options
+  const availableSections = useMemo(() => {
+    const defaults = ['A', 'B', 'C', 'D', 'E', 'F']
+    const set = new Set(defaults)
+    users.forEach((u) => {
+      if (u?.roleInfo?.section) set.add(u.roleInfo.section)
+      if (u?.section) set.add(u.section)
+      if (Array.isArray(u?.roleInfo?.assignments)) {
+        u.roleInfo.assignments.forEach((a) => {
+          if (a.section) set.add(a.section)
+        })
+      }
+    })
+    return Array.from(set).filter(Boolean).sort()
+  }, [users])
 
   const load = async () => {
     setError('')
     setIsLoading(true)
     try {
-      const qs = roleFilter !== 'all' ? `?role=${encodeURIComponent(roleFilter)}` : ''
+      const params = new URLSearchParams()
+      if (roleFilter !== 'all') params.append('role', roleFilter)
+      if (batchFilter !== 'all') params.append('batch', batchFilter)
+      if (sectionFilter !== 'all') params.append('section', sectionFilter)
+      const qs = params.toString() ? `?${params.toString()}` : ''
+
       const res = await http.get(`/api/admin/users${qs}`)
       const data = unwrapApiResponse(res)
       const list = Array.isArray(data) ? data : []
@@ -45,26 +86,56 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     load()
-  }, [location.key, location.state?.refresh, roleFilter])
+  }, [location.key, location.state?.refresh, roleFilter, batchFilter, sectionFilter])
 
-  // Filter list by search query client-side for immediate feedback
-  const filteredUsers = users.filter((u) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    const assignmentsStr = Array.isArray(u?.roleInfo?.assignments)
-      ? u.roleInfo.assignments.map((a) => `${a.department} ${a.subject}`).join(' ')
-      : ''
-    return (
-      u?.name?.toLowerCase().includes(q) ||
-      u?.email?.toLowerCase().includes(q) ||
-      u?.roleInfo?.department?.toLowerCase().includes(q) ||
-      u?.roleInfo?.faculty?.toLowerCase().includes(q) ||
-      u?.roleInfo?.class?.toLowerCase().includes(q) ||
-      u?.roleInfo?.section?.toLowerCase().includes(q) ||
-      u?.roleInfo?.batch?.toLowerCase().includes(q) ||
-      assignmentsStr.toLowerCase().includes(q)
-    )
-  })
+  // Filter list by role, batch, section, and search query client-side
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter !== 'all' && u?.role !== roleFilter) return false
+
+      if (batchFilter !== 'all') {
+        const uBatch = (u?.roleInfo?.batch || u?.batch || '').toLowerCase().trim()
+        const hasAssignmentBatch = Array.isArray(u?.roleInfo?.assignments) &&
+          u.roleInfo.assignments.some(
+            (a) => (a.batch || '').toLowerCase().trim() === batchFilter.toLowerCase().trim() ||
+                   (a.semester || '').toLowerCase().trim() === batchFilter.toLowerCase().trim()
+          )
+        if (uBatch !== batchFilter.toLowerCase().trim() && !hasAssignmentBatch) {
+          return false
+        }
+      }
+
+      if (sectionFilter !== 'all') {
+        const uSection = (u?.roleInfo?.section || u?.section || '').toLowerCase().trim()
+        const hasAssignmentSection = Array.isArray(u?.roleInfo?.assignments) &&
+          u.roleInfo.assignments.some(
+            (a) => (a.section || '').toLowerCase().trim() === sectionFilter.toLowerCase().trim()
+          )
+        if (uSection !== sectionFilter.toLowerCase().trim() && !hasAssignmentSection) {
+          return false
+        }
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const assignmentsStr = Array.isArray(u?.roleInfo?.assignments)
+          ? u.roleInfo.assignments.map((a) => `${a.department} ${a.subject} ${a.batch || ''} ${a.section || ''}`).join(' ')
+          : ''
+        const matchesSearch =
+          u?.name?.toLowerCase().includes(q) ||
+          u?.email?.toLowerCase().includes(q) ||
+          u?.roleInfo?.department?.toLowerCase().includes(q) ||
+          u?.roleInfo?.faculty?.toLowerCase().includes(q) ||
+          u?.roleInfo?.class?.toLowerCase().includes(q) ||
+          u?.roleInfo?.section?.toLowerCase().includes(q) ||
+          u?.roleInfo?.batch?.toLowerCase().includes(q) ||
+          assignmentsStr.toLowerCase().includes(q)
+        if (!matchesSearch) return false
+      }
+
+      return true
+    })
+  }, [users, roleFilter, batchFilter, sectionFilter, searchQuery])
 
   const columns =
     roleFilter === 'teacher'
@@ -105,6 +176,8 @@ export default function AdminUsersPage() {
     }
   }
 
+  const hasActiveFilters = roleFilter !== 'all' || batchFilter !== 'all' || sectionFilter !== 'all' || searchQuery.trim() !== ''
+
   return (
     <div className="space-y-6">
       {/* Header & Controls */}
@@ -123,7 +196,7 @@ export default function AdminUsersPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Search bar */}
-          <div className="relative w-56 sm:w-72">
+          <div className="relative w-56 sm:w-64">
             <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
             <input
               type="text"
@@ -146,6 +219,55 @@ export default function AdminUsersPage() {
               <option value="student">Students</option>
             </select>
           </div>
+
+          {/* Batch Filter */}
+          <div className="relative">
+            <select
+              value={batchFilter}
+              onChange={(e) => setBatchFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Batches</option>
+              {availableBatches.map((b) => (
+                <option key={b} value={b}>
+                  Batch {b}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Section Filter */}
+          <div className="relative">
+            <select
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+            >
+              <option value="all">All Sections</option>
+              {availableSections.map((s) => (
+                <option key={s} value={s}>
+                  Section {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reset Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setRoleFilter('all')
+                setBatchFilter('all')
+                setSectionFilter('all')
+                setSearchQuery('')
+              }}
+              title="Reset all filters"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors hover:cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset</span>
+            </button>
+          )}
 
           {/* Create User Button */}
           <Link
@@ -197,7 +319,7 @@ export default function AdminUsersPage() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-slate-300 dark:text-slate-600" />
                       <p className="font-semibold text-slate-700 dark:text-slate-300">No users match your criteria</p>
-                      <p className="text-[11px] text-slate-500">Try adjusting your role filter or search query.</p>
+                      <p className="text-[11px] text-slate-500">Try adjusting your filters or search query.</p>
                     </div>
                   </td>
                 </tr>

@@ -60,9 +60,36 @@ export const createUser = asyncHandler(async (req, res) => {
 
 // Get all users (admin only)
 export const getAllUsers = asyncHandler(async (req, res) => {
-    const role = req.query.role;
+    const { role, batch, section } = req.query;
 
-    const filter = role ? { role } : {};
+    const filter = {};
+    if (role && role !== 'all') filter.role = role;
+
+    if (batch && batch !== 'all') {
+        filter.$or = [
+            { 'roleInfo.batch': batch },
+            { batch: batch },
+            { 'roleInfo.assignments.batch': batch },
+            { 'roleInfo.assignments.semester': batch }
+        ];
+    }
+
+    if (section && section !== 'all') {
+        const sectionFilter = [
+            { 'roleInfo.section': section },
+            { section: section },
+            { 'roleInfo.assignments.section': section }
+        ];
+        if (filter.$or) {
+            filter.$and = [
+                { $or: filter.$or },
+                { $or: sectionFilter }
+            ];
+            delete filter.$or;
+        } else {
+            filter.$or = sectionFilter;
+        }
+    }
 
     const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
 
