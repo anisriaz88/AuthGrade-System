@@ -11,13 +11,32 @@ export function AuthProvider({ children }) {
   const [isBootstrapping, setIsBootstrapping] = useState(true)
 
   useEffect(() => {
-    const stored = getStoredAuth()
-    if (stored) {
-      setUser(stored.user)
-      setAccessToken(stored.accessToken)
+    async function initAuth() {
+      const stored = getStoredAuth()
+      if (stored) {
+        try {
+          const res = await http.get('/api/auth/me')
+          const data = unwrapApiResponse(res)
+          if (data?.user) {
+            setUser(data.user)
+            setAccessToken(stored.accessToken)
+            setStoredAuth({ user: data.user, accessToken: stored.accessToken })
+          } else {
+            setUser(null)
+            setAccessToken(null)
+            clearStoredAuth()
+          }
+        } catch {
+          setUser(null)
+          setAccessToken(null)
+          clearStoredAuth()
+        }
+      }
+      setIsBootstrapping(false)
     }
-    setIsBootstrapping(false)
+    initAuth()
   }, [])
+
 
   const isAuthenticated = !!user && !!accessToken
 

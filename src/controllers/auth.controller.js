@@ -53,3 +53,12 @@ export const logout = asyncHandler(async (req, res) => {
   res.clearCookie("accessToken", getAuthCookieOptions(req));
   res.status(200).json(new ApiResponse(200, "Logout successful", null));
 });
+
+export const getMe = asyncHandler(async (req, res) => {
+  res.status(200).json(
+    new ApiResponse(200, "Current user retrieved", {
+      user: req.user,
+    }),
+  );
+});
+
