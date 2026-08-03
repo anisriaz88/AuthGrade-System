@@ -24,43 +24,53 @@ export default function AdminUsersPage() {
   const location = useLocation()
   const [users, setUsers] = useState([])
   const [roleFilter, setRoleFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState('all')
   const [batchFilter, setBatchFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Compute available batch choices from loaded users + default standard options
-  const availableBatches = useMemo(() => {
-    const defaults = ['2021-2025', '2022-2026', '2023-2027', '2024-2028', '2025-2029']
-    const set = new Set(defaults)
+  // Compute available department choices strictly from created student accounts
+  const availableDepartments = useMemo(() => {
+    const set = new Set()
     users.forEach((u) => {
-      if (u?.roleInfo?.batch) set.add(u.roleInfo.batch)
-      if (u?.batch) set.add(u.batch)
-      if (Array.isArray(u?.roleInfo?.assignments)) {
-        u.roleInfo.assignments.forEach((a) => {
-          if (a.batch) set.add(a.batch)
-          if (a.semester) set.add(a.semester)
-        })
+      if (u?.role === 'student') {
+        const dept = u?.roleInfo?.department || u?.department
+        if (dept && String(dept).trim()) {
+          set.add(String(dept).trim())
+        }
       }
     })
-    return Array.from(set).filter(Boolean).sort()
+    return Array.from(set).sort()
   }, [users])
 
-  // Compute available section choices from loaded users + default standard options
-  const availableSections = useMemo(() => {
-    const defaults = ['A', 'B', 'C', 'D', 'E', 'F']
-    const set = new Set(defaults)
+  // Compute available batch choices strictly from created student accounts
+  const availableBatches = useMemo(() => {
+    const set = new Set()
     users.forEach((u) => {
-      if (u?.roleInfo?.section) set.add(u.roleInfo.section)
-      if (u?.section) set.add(u.section)
-      if (Array.isArray(u?.roleInfo?.assignments)) {
-        u.roleInfo.assignments.forEach((a) => {
-          if (a.section) set.add(a.section)
-        })
+      if (u?.role === 'student') {
+        const b = u?.roleInfo?.batch || u?.batch
+        if (b && String(b).trim()) {
+          set.add(String(b).trim())
+        }
       }
     })
-    return Array.from(set).filter(Boolean).sort()
+    return Array.from(set).sort()
+  }, [users])
+
+  // Compute available section choices strictly from created student accounts
+  const availableSections = useMemo(() => {
+    const set = new Set()
+    users.forEach((u) => {
+      if (u?.role === 'student') {
+        const sec = u?.roleInfo?.section || u?.section
+        if (sec && String(sec).trim()) {
+          set.add(String(sec).trim())
+        }
+      }
+    })
+    return Array.from(set).sort()
   }, [users])
 
   const load = async () => {
@@ -69,8 +79,6 @@ export default function AdminUsersPage() {
     try {
       const params = new URLSearchParams()
       if (roleFilter !== 'all') params.append('role', roleFilter)
-      if (batchFilter !== 'all') params.append('batch', batchFilter)
-      if (sectionFilter !== 'all') params.append('section', sectionFilter)
       const qs = params.toString() ? `?${params.toString()}` : ''
 
       const res = await http.get(`/api/admin/users${qs}`)
@@ -86,33 +94,27 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     load()
-  }, [location.key, location.state?.refresh, roleFilter, batchFilter, sectionFilter])
+  }, [location.key, location.state?.refresh, roleFilter])
 
-  // Filter list by role, batch, section, and search query client-side
+  // Filter list by role, department/batch/section (for students), and search query client-side
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       if (roleFilter !== 'all' && u?.role !== roleFilter) return false
 
-      if (batchFilter !== 'all') {
-        const uBatch = (u?.roleInfo?.batch || u?.batch || '').toLowerCase().trim()
-        const hasAssignmentBatch = Array.isArray(u?.roleInfo?.assignments) &&
-          u.roleInfo.assignments.some(
-            (a) => (a.batch || '').toLowerCase().trim() === batchFilter.toLowerCase().trim() ||
-                   (a.semester || '').toLowerCase().trim() === batchFilter.toLowerCase().trim()
-          )
-        if (uBatch !== batchFilter.toLowerCase().trim() && !hasAssignmentBatch) {
-          return false
+      if (roleFilter === 'student') {
+        if (departmentFilter !== 'all') {
+          const uDept = String(u?.roleInfo?.department || u?.department || '').toLowerCase().trim()
+          if (uDept !== departmentFilter.toLowerCase().trim()) return false
         }
-      }
 
-      if (sectionFilter !== 'all') {
-        const uSection = (u?.roleInfo?.section || u?.section || '').toLowerCase().trim()
-        const hasAssignmentSection = Array.isArray(u?.roleInfo?.assignments) &&
-          u.roleInfo.assignments.some(
-            (a) => (a.section || '').toLowerCase().trim() === sectionFilter.toLowerCase().trim()
-          )
-        if (uSection !== sectionFilter.toLowerCase().trim() && !hasAssignmentSection) {
-          return false
+        if (batchFilter !== 'all') {
+          const uBatch = String(u?.roleInfo?.batch || u?.batch || '').toLowerCase().trim()
+          if (uBatch !== batchFilter.toLowerCase().trim()) return false
+        }
+
+        if (sectionFilter !== 'all') {
+          const uSection = String(u?.roleInfo?.section || u?.section || '').toLowerCase().trim()
+          if (uSection !== sectionFilter.toLowerCase().trim()) return false
         }
       }
 
@@ -135,7 +137,7 @@ export default function AdminUsersPage() {
 
       return true
     })
-  }, [users, roleFilter, batchFilter, sectionFilter, searchQuery])
+  }, [users, roleFilter, departmentFilter, batchFilter, sectionFilter, searchQuery])
 
   const columns =
     roleFilter === 'teacher'
@@ -176,7 +178,12 @@ export default function AdminUsersPage() {
     }
   }
 
-  const hasActiveFilters = roleFilter !== 'all' || batchFilter !== 'all' || sectionFilter !== 'all' || searchQuery.trim() !== ''
+  const hasActiveFilters =
+    roleFilter !== 'all' ||
+    departmentFilter !== 'all' ||
+    batchFilter !== 'all' ||
+    sectionFilter !== 'all' ||
+    searchQuery.trim() !== ''
 
   return (
     <div className="space-y-6">
@@ -211,7 +218,15 @@ export default function AdminUsersPage() {
           <div className="relative">
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={(e) => {
+                const nextRole = e.target.value
+                setRoleFilter(nextRole)
+                if (nextRole !== 'student') {
+                  setDepartmentFilter('all')
+                  setBatchFilter('all')
+                  setSectionFilter('all')
+                }
+              }}
               className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
             >
               <option value="all">All Roles</option>
@@ -220,43 +235,65 @@ export default function AdminUsersPage() {
             </select>
           </div>
 
-          {/* Batch Filter */}
-          <div className="relative">
-            <select
-              value={batchFilter}
-              onChange={(e) => setBatchFilter(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
-            >
-              <option value="all">All Batches</option>
-              {availableBatches.map((b) => (
-                <option key={b} value={b}>
-                  Batch {b}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Student Specific Filters: Department, Batch, Section */}
+          {roleFilter === 'student' && (
+            <>
+              {/* Department Filter */}
+              <div className="relative">
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+                >
+                  <option value="all">All Departments</option>
+                  {availableDepartments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Section Filter */}
-          <div className="relative">
-            <select
-              value={sectionFilter}
-              onChange={(e) => setSectionFilter(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
-            >
-              <option value="all">All Sections</option>
-              {availableSections.map((s) => (
-                <option key={s} value={s}>
-                  Section {s}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Batch Filter */}
+              <div className="relative">
+                <select
+                  value={batchFilter}
+                  onChange={(e) => setBatchFilter(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+                >
+                  <option value="all">All Batches</option>
+                  {availableBatches.map((b) => (
+                    <option key={b} value={b}>
+                      Batch {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Section Filter */}
+              <div className="relative">
+                <select
+                  value={sectionFilter}
+                  onChange={(e) => setSectionFilter(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-600 hover:cursor-pointer"
+                >
+                  <option value="all">All Sections</option>
+                  {availableSections.map((s) => (
+                    <option key={s} value={s}>
+                      Section {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           {/* Reset Filters */}
           {hasActiveFilters && (
             <button
               onClick={() => {
                 setRoleFilter('all')
+                setDepartmentFilter('all')
                 setBatchFilter('all')
                 setSectionFilter('all')
                 setSearchQuery('')
